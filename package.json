@@ -1,0 +1,18 @@
+{
+  "name": "silverstripe-elemental-map",
+  "version": "1.0.0",
+  "repository": "https://github.com/edgarindustries/silverstripe-elemental-map",
+  "author": "Edgar Industries",
+  "license": "BSD-3-Clause",
+  "private": false,
+  "dependencies": {
+    "leaflet": "^1.3.4",
+    "leaflet-providers": "^1.4.0"
+  },
+  "devDependencies": {
+    "copyfiles": "^2.1.0"
+  },
+  "scripts": {
+    "build": "copyfiles -f ./node_modules/leaflet/dist/* ./client/ && copyfiles -f ./node_modules/leaflet-providers/*.js ./client/"
+  }
+}

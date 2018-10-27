@@ -1,0 +1,25 @@
+{
+    "name": "edgarindustries/silverstripe-elemental-map",
+    "description": "Leaflet Map block for SilverStripe Elemental",
+    "type": "silverstripe/vendormodule",
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Ed Linklater",
+            "email": "ed@edgar.industries"
+        }
+    ],
+    "require": {
+        "dnadesign/silverstripe-elemental": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "EdgarIndustries\\ElementalMap\\": "src/"
+        }
+    },
+    "extra": {
+        "expose": [
+            "client"
+        ]
+    }
+}

@@ -13,6 +13,6 @@
     "copyfiles": "^2.1.0"
   },
   "scripts": {
-    "build": "copyfiles -f ./node_modules/leaflet/dist/* ./client/ && copyfiles -f ./node_modules/leaflet-providers/*.js ./client/"
+    "build": "copyfiles -f ./node_modules/leaflet/dist/* ./client/ && copyfiles -f ./node_modules/leaflet-providers/*.js ./client/ && copyfiles -f ./node_modules/leaflet/dist/images/* ./client/images/"
   }
 }

@@ -3,19 +3,29 @@
 namespace EdgarIndustries\ElementalMap\Block;
 
 use DNADesign\Elemental\Models\BaseElement;
+use EdgarIndustries\ElementalMap\Model\MapMarker;
+use SilverStripe\Control\Director;
 
 class MapBlock extends BaseElement
 {
     private static $icon = 'font-icon-rocket';
 
     private static $db = [
-        'Provider' => "Enum('HERE.normalDay,HERE.hybridDay,MapBox,OpenStreetMap.Mapnik,OpenTopoMap', 'OpenStreetMap.Mapnik')",
+        'Provider' => 'Enum(array("HERE normalDay","HERE hybridDay","MapBox","OpenStreetMap Mapnik","OpenTopoMap"), "OpenStreetMap Mapnik")',
         'ProviderID' => 'Varchar(255)',
         'ProviderToken' => 'Varchar(255)',
         'Height' => 'Int',
-        'DefaultLatitude' => 'Decimal(3,9)',
-        'DefaultLongitude' => 'Decimal(3,9)',
+        'DefaultLatitude' => 'Decimal(9,6)',
+        'DefaultLongitude' => 'Decimal(9,6)',
         'DefaultZoom' => 'Int',
+    ];
+
+    private static $many_many = [
+        'Markers' => MapMarker::class,
+    ];
+
+    private static $defaults = [
+        'DefaultZoom' => 14,
     ];
 
     private static $singular_name = 'map';
@@ -25,10 +35,39 @@ class MapBlock extends BaseElement
     private static $table_name = 'Edgar_EB_MapBlock';
 
     protected static $requires_auth = [
-        'HERE.normalDay',
-        'HERE.hybridDay',
+        'HERE normalDay',
+        'HERE hybridDay',
         'MapBox',
     ];
+
+    public function getProviderDotted()
+    {
+        return str_replace(' ', '.', $this->Provider);
+    }
+
+    public function getProviderLive()
+    {
+        return Director::isLive();
+    }
+
+    public function getProviderOptions()
+    {
+        $options = [];
+
+        if ($this->Provider == 'HERE normalDay' || $this->Provider == 'HERE hybridDay') {
+            $options = [
+                'app_id' => $this->ProviderID,
+                'app_code' => $this->ProviderToken,
+            ];
+        } elseif ($this->Provider == 'MapBox') {
+            $options = [
+                'id' => $this->ProviderID,
+                'accessToken' => $this->ProviderToken,
+            ];
+        }
+
+        return json_encode((object) $options);
+    }
 
     public function getType()
     {

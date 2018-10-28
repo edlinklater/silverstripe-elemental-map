@@ -14,7 +14,7 @@
         <% loop $Markers %>
             var map{$Up.ID}marker{$ID} = L.marker([{$Latitude}, {$Longitude}]).addTo(map{$Up.ID});
 
-            <% if $Description %>
+            <% if $PopupContent %>
                 map{$Up.ID}marker{$ID}.bindPopup('{$PopupContent}');
             <% end_if %>
         <% end_loop %>

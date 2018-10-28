@@ -4,17 +4,29 @@ namespace EdgarIndustries\ElementalMap\Block;
 
 use DNADesign\Elemental\Models\BaseElement;
 use EdgarIndustries\ElementalMap\Model\MapMarker;
+use EdgarIndustries\ElementalMap\Provider\Here;
+use EdgarIndustries\ElementalMap\Provider\HereHybrid;
+use EdgarIndustries\ElementalMap\Provider\Mapbox;
 use SilverStripe\Control\Director;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Forms\DropdownField;
+use SilverStripe\Forms\FieldGroup;
+use SilverStripe\Forms\GridField\GridField;
+use SilverStripe\Forms\GridField\GridFieldConfig_RelationEditor;
+use SilverStripe\Forms\LiteralField;
+use SilverStripe\Forms\NumericField;
+use SilverStripe\Forms\TextField;
+use SilverStripe\ORM\ArrayList;
+use SilverStripe\SiteConfig\SiteConfig;
 
 class MapBlock extends BaseElement
 {
     private static $icon = 'font-icon-rocket';
 
     private static $db = [
-        'Provider' => 'Enum(array("HERE normalDay","HERE hybridDay","MapBox","OpenStreetMap Mapnik","OpenTopoMap"), "OpenStreetMap Mapnik")',
-        'ProviderID' => 'Varchar(255)',
-        'ProviderToken' => 'Varchar(255)',
+        'Provider' => 'Varchar(255)',
         'Height' => 'Int',
+        'Width' => 'Int',
         'DefaultLatitude' => 'Decimal(9,6)',
         'DefaultLongitude' => 'Decimal(9,6)',
         'DefaultZoom' => 'Int',
@@ -34,39 +46,73 @@ class MapBlock extends BaseElement
 
     private static $table_name = 'Edgar_EB_MapBlock';
 
-    protected static $requires_auth = [
-        'HERE normalDay',
-        'HERE hybridDay',
-        'MapBox',
+    private static $providers = [
+        Here::class,
+        HereHybrid::class,
+        Mapbox::class,
     ];
 
-    public function getProviderDotted()
+    public function getCMSFields()
     {
-        return str_replace(' ', '.', $this->Provider);
-    }
+        $fields = parent::getCMSFields();
 
-    public function getProviderLive()
-    {
-        return Director::isLive();
-    }
+        $fields->removeByName([
+            'Provider',
+            'ProviderVariant',
+            'DefaultLatitude',
+            'DefaultLongitude',
+            'DefaultZoom',
+            'LinkTracking',
+            'FileTracking',
+            'Markers',
+            'Height',
+            'Width',
+        ]);
 
-    public function getProviderOptions()
-    {
-        $options = [];
+        $currentProvider = class_exists($this->Provider) ? Injector::inst()->create($this->Provider) : null;
 
-        if ($this->Provider == 'HERE normalDay' || $this->Provider == 'HERE hybridDay') {
-            $options = [
-                'app_id' => $this->ProviderID,
-                'app_code' => $this->ProviderToken,
-            ];
-        } elseif ($this->Provider == 'MapBox') {
-            $options = [
-                'id' => $this->ProviderID,
-                'accessToken' => $this->ProviderToken,
-            ];
+        $providers = ArrayList::create();
+        foreach ($this->config()->get('providers') as $providerClass) {
+            $provider = Injector::inst()->create($providerClass);
+            $providers->push((object) ['ID' => $providerClass, 'Title' => $provider->getTitle()]);
         }
 
-        return json_encode((object) $options);
+        $fields->addFieldsToTab('Root.Main', [
+            DropdownField::create('Provider', 'Tiles', $providers->sort('Title')->map()),
+            FieldGroup::create(
+                'Centre',
+                NumericField::create('DefaultLatitude', 'Latitude')->setScale(6),
+                NumericField::create('DefaultLongitude', 'Longitude')->setScale(6),
+                TextField::create('DefaultZoom', 'Zoom')
+            ),
+            FieldGroup::create(
+                'Size',
+                NumericField::create('Height'),
+                NumericField::create('Width', 'Width (optional)')
+            ),
+            LiteralField::create('MarkersPadding', '<p style="height: 25px">&nbsp;</p>'),
+            GridField::create(
+                'Markers',
+                'Markers',
+                $this->Markers()
+            )->setConfig(GridFieldConfig_RelationEditor::create()),
+        ]);
+
+        return $fields;
+    }
+
+    public function getLeafletParams()
+    {
+        $currentProvider = class_exists($this->Provider) ? Injector::inst()->create($this->Provider) : null;
+
+        return $currentProvider ? json_encode($currentProvider->getLeafletParams()) : false;
+    }
+
+    public function getTileUrl()
+    {
+        $currentProvider = class_exists($this->Provider) ? Injector::inst()->create($this->Provider) : null;
+
+        return $currentProvider ? $currentProvider->getTileUrl() : false;
     }
 
     public function getType()
@@ -77,14 +123,26 @@ class MapBlock extends BaseElement
     public function validate()
     {
         $result = parent::validate();
+        $currentProvider = class_exists($this->Provider) ? Injector::inst()->create($this->Provider) : null;
+        $siteconfig = SiteConfig::current_site_config();
 
-        if (in_array($this->Provider, self::$requires_auth)) {
-            if (empty($this->ProviderID)) {
-                $result->addFieldError('ProviderID', 'Required for ' . $this->Provider);
+        if (empty($this->Height)) {
+            $result->addFieldError('Height', 'Height is required');
+        }
+
+        if ($currentProvider) {
+            $providerAuth = $currentProvider->requiresAuth();
+            $invalid = false;
+
+            foreach ($providerAuth as $key) {
+                if (empty($siteconfig->$key)) $invalid = true;
             }
 
-            if (empty($this->ProviderToken)) {
-                $result->addFieldError('ProviderToken', 'Required for ' . $this->Provider);
+            if ($invalid) {
+                $result->addFieldError(
+                    'Provider',
+                    'This provider requires authentication configuration in Settings > Map Credentials'
+                );
             }
         }
 

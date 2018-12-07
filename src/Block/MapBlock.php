@@ -46,6 +46,8 @@ class MapBlock extends BaseElement
 
     private static $table_name = 'Edgar_EB_MapBlock';
 
+    private static $inline_editable = false;
+
     private static $providers = [
         Here::class,
         HereHybrid::class,

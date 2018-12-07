@@ -1,7 +1,7 @@
 {
     "name": "edgarindustries/silverstripe-elemental-map",
     "description": "Leaflet Map block for SilverStripe Elemental",
-    "type": "silverstripe/vendormodule",
+    "type": "silverstripe-vendormodule",
     "license": "BSD-3-Clause",
     "authors": [
         {

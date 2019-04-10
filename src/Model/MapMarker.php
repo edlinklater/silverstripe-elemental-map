@@ -4,6 +4,7 @@ namespace EdgarIndustries\ElementalMap\Model;
 
 use EdgarIndustries\ElementalMap\Block\MapBlock;
 use SilverStripe\Forms\FieldGroup;
+use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldAddNewButton;
 use SilverStripe\Forms\GridField\GridFieldConfig_RelationEditor;
@@ -35,28 +36,29 @@ class MapMarker extends DataObject
 
     public function getCMSFields()
     {
-        $fields = parent::getCMSFields();
+        $this->beforeUpdateCMSFields(function (FieldList $fields) {
 
-        $fields->removeByName(['Latitude', 'Longitude', 'LinkTracking', 'FileTracking', 'Block']);
+            $fields->removeByName(['Latitude', 'Longitude', 'LinkTracking', 'FileTracking', 'Block']);
 
-        $fields->dataFieldByName('Description')->setRows(4);
+            $fields->dataFieldByName('Description')->setRows(4);
 
-        $fields->addFieldsToTab('Root.Main', [
-            FieldGroup::create(
-                'Position',
-                TextField::create('Latitude'),
-                TextField::create('Longitude')
-            ),
-            LiteralField::create('BlocksPadding', '<p style="height: 25px">&nbsp;</p>'),
-            GridField::create(
-                'Block',
-                'Show on Maps',
-                $this->Block()
-            )->setConfig(GridFieldConfig_RelationEditor::create()
-                ->removeComponentsByType(GridFieldAddNewButton::class))
-        ]);
-
-        return $fields;
+            $fields->addFieldsToTab('Root.Main', [
+                FieldGroup::create(
+                    'Position',
+                    TextField::create('Latitude'),
+                    TextField::create('Longitude')
+                ),
+                LiteralField::create('BlocksPadding', '<p style="height: 25px">&nbsp;</p>'),
+                GridField::create(
+                    'Block',
+                    'Show on Maps',
+                    $this->Block()
+                )->setConfig(GridFieldConfig_RelationEditor::create()
+                    ->removeComponentsByType(GridFieldAddNewButton::class))
+            ]);
+        });
+        
+        return parent::getCMSFields();
     }
 
     public function getPopupContent()

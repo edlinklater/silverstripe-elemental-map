@@ -7,10 +7,10 @@ use EdgarIndustries\ElementalMap\Model\MapMarker;
 use EdgarIndustries\ElementalMap\Provider\Here;
 use EdgarIndustries\ElementalMap\Provider\HereHybrid;
 use EdgarIndustries\ElementalMap\Provider\Mapbox;
-use SilverStripe\Control\Director;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldGroup;
+use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldConfig_RelationEditor;
 use SilverStripe\Forms\LiteralField;
@@ -56,51 +56,52 @@ class MapBlock extends BaseElement
 
     public function getCMSFields()
     {
-        $fields = parent::getCMSFields();
+        $this->beforeUpdateCMSFields(function (FieldList $fields) {
 
-        $fields->removeByName([
-            'Provider',
-            'ProviderVariant',
-            'DefaultLatitude',
-            'DefaultLongitude',
-            'DefaultZoom',
-            'LinkTracking',
-            'FileTracking',
-            'Markers',
-            'Height',
-            'Width',
-        ]);
-
-        $currentProvider = class_exists($this->Provider) ? Injector::inst()->create($this->Provider) : null;
-
-        $providers = ArrayList::create();
-        foreach ($this->config()->get('providers') as $providerClass) {
-            $provider = Injector::inst()->create($providerClass);
-            $providers->push((object) ['ID' => $providerClass, 'Title' => $provider->getTitle()]);
-        }
-
-        $fields->addFieldsToTab('Root.Main', [
-            DropdownField::create('Provider', 'Tiles', $providers->sort('Title')->map()),
-            FieldGroup::create(
-                'Centre',
-                NumericField::create('DefaultLatitude', 'Latitude')->setScale(6),
-                NumericField::create('DefaultLongitude', 'Longitude')->setScale(6),
-                TextField::create('DefaultZoom', 'Zoom')
-            ),
-            FieldGroup::create(
-                'Size',
-                NumericField::create('Height'),
-                NumericField::create('Width', 'Width (optional)')
-            ),
-            LiteralField::create('MarkersPadding', '<p style="height: 25px">&nbsp;</p>'),
-            GridField::create(
+            $fields->removeByName([
+                'Provider',
+                'ProviderVariant',
+                'DefaultLatitude',
+                'DefaultLongitude',
+                'DefaultZoom',
+                'LinkTracking',
+                'FileTracking',
                 'Markers',
-                'Markers',
-                $this->Markers()
-            )->setConfig(GridFieldConfig_RelationEditor::create()),
-        ]);
+                'Height',
+                'Width',
+            ]);
 
-        return $fields;
+            $currentProvider = class_exists($this->Provider) ? Injector::inst()->create($this->Provider) : null;
+
+            $providers = ArrayList::create();
+            foreach ($this->config()->get('providers') as $providerClass) {
+                $provider = Injector::inst()->create($providerClass);
+                $providers->push((object)['ID' => $providerClass, 'Title' => $provider->getTitle()]);
+            }
+
+            $fields->addFieldsToTab('Root.Main', [
+                DropdownField::create('Provider', 'Tiles', $providers->sort('Title')->map()),
+                FieldGroup::create(
+                    'Centre',
+                    NumericField::create('DefaultLatitude', 'Latitude')->setScale(6),
+                    NumericField::create('DefaultLongitude', 'Longitude')->setScale(6),
+                    TextField::create('DefaultZoom', 'Zoom')
+                ),
+                FieldGroup::create(
+                    'Size',
+                    NumericField::create('Height'),
+                    NumericField::create('Width', 'Width (optional)')
+                ),
+                LiteralField::create('MarkersPadding', '<p style="height: 25px">&nbsp;</p>'),
+                GridField::create(
+                    'Markers',
+                    'Markers',
+                    $this->Markers()
+                )->setConfig(GridFieldConfig_RelationEditor::create()),
+            ]);
+        });
+        
+        return parent::getCMSFields();
     }
 
     public function getLeafletParams()
@@ -137,7 +138,9 @@ class MapBlock extends BaseElement
             $invalid = false;
 
             foreach ($providerAuth as $key) {
-                if (empty($siteconfig->$key)) $invalid = true;
+                if (empty($siteconfig->$key)) {
+                    $invalid = true;
+                }
             }
 
             if ($invalid) {

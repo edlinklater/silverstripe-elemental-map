@@ -38,6 +38,7 @@ class MapBlock extends BaseElement
 
     private static $defaults = [
         'DefaultZoom' => 14,
+        'Height' => 400,
     ];
 
     private static $singular_name = 'map';
@@ -100,7 +101,7 @@ class MapBlock extends BaseElement
                 )->setConfig(GridFieldConfig_RelationEditor::create()),
             ]);
         });
-        
+
         return parent::getCMSFields();
     }
 
